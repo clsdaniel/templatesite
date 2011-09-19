@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='templatesite',
-      version='0.1',
+      version='0.2',
       description='Static site generator from Jinja2 templates',
       author='Carlos Daniel Ruvalcaba Valenzuela',
       author_email='clsdaniel@gmail.com',

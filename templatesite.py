@@ -32,6 +32,13 @@ parser.add_option('-m', '--master', dest='master_template',
 parser.add_option('-r', '--recursive', dest='recursive', action='store_true',
                   default=True, help='Recursive parsing')
 
+parser.add_option('-l', '--localpaths', dest='withlocalpaths', action='store_true',
+                  default=False, help='Transform urls to local paths, useful for testing locally')
+
+parser.add_option('-c', '--css', dest='with_css', action='store_true',
+                  default=False, help='Process CSS files as templates too')
+
+
 options, args = parser.parse_args()
 
 path = os.curdir
@@ -46,24 +53,38 @@ print "Loading Environment"
 print "Input Path:", path
 print "Output Path:", out_path
 
+file_types = ['.html']
+
+if options.with_css:
+    file_types.append('.css')
+
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(path))
 
+def url(u):
+    if options.withlocalpaths:
+        if u[0] == '/':
+            u = u[1:]
+        final_url = 'file:///' + os.path.join(out_path, u).replace(os.path.sep, '/')
+    else:
+        final_url = u
+    return final_url
+
+env_vars = dict(url=url)
 def parse_folder(folder_path, base_path):
     print "\tParsing folder [%s]" % base_path
     for filename in os.listdir(folder_path):
-        if filename.endswith('.html') and filename != options.master_template:
+        if filter(lambda x: x in filename, file_types) and filename != options.master_template:
             t_path = os.path.join(base_path, filename)
             t_name = t_path.replace('\\', '/')
             print "\tRendering template:", t_name
             template = env.get_template(t_name)
             output = os.path.join(out_path, t_path)
             fd = file(output, 'w')
-            fd.write(template.render().encode('utf-8'))
+            fd.write(template.render(**env_vars).encode('utf-8'))
             fd.close()
-        elif os.path.isdir(os.path.join(folder_path, filename)) and filename != 'media':
+        elif os.path.isdir(os.path.join(folder_path, filename)):
             print "\tDescending into folder:", filename
-            output = os.path.join(out_path, filename)
-            print output
+            output = os.path.join(out_path, base_path, filename)
             try:
                 os.stat(output)
             except Exception, e:

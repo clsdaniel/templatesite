@@ -38,26 +38,38 @@ path = os.curdir
 out_path = os.path.abspath(options.output)
 
 try:
-    os.path.dirname(out_path)
+    os.stat(out_path)
 except Exception, e:
     os.mkdir(out_path)
+
+print "Loading Environment"
+print "Input Path:", path
+print "Output Path:", out_path
 
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(path))
 
 def parse_folder(folder_path, base_path):
+    print "\tParsing folder [%s]" % base_path
     for filename in os.listdir(folder_path):
         if filename.endswith('.html') and filename != options.master_template:
             t_path = os.path.join(base_path, filename)
-            template = env.get_template(t_path)
+            t_name = t_path.replace('\\', '/')
+            print "\tRendering template:", t_name
+            template = env.get_template(t_name)
             output = os.path.join(out_path, t_path)
-            template.render(output)
+            fd = file(output, 'w')
+            fd.write(template.render().encode('utf-8'))
+            fd.close()
         elif os.path.isdir(os.path.join(folder_path, filename)) and filename != 'media':
+            print "\tDescending into folder:", filename
             output = os.path.join(out_path, filename)
+            print output
             try:
-                os.path.dirname(output)
+                os.stat(output)
             except Exception, e:
                 os.mkdir(output)
-                parse_folder(os.path.join(folder_path, filename), os.path.join(base_path, filename))
+            parse_folder(os.path.join(folder_path, filename), os.path.join(base_path, filename))
 
 if options.output:
-    parse_folder(path)
+    print "Parsing files"
+    parse_folder(path, '')

@@ -69,6 +69,12 @@ def url(u):
         final_url = u
     return final_url
 
+def strip_extension(filename):
+    n = filename.rfind('.')
+    if n != -1:
+        return filename[:n]
+    return filename
+
 env_vars = dict(url=url)
 def parse_folder(folder_path, base_path):
     print "\tParsing folder [%s]" % base_path
@@ -80,6 +86,7 @@ def parse_folder(folder_path, base_path):
             template = env.get_template(t_name)
             output = os.path.join(out_path, t_path)
             fd = file(output, 'w')
+            env_vars['template_name'] = strip_extension(filename)
             fd.write(template.render(**env_vars).encode('utf-8'))
             fd.close()
         elif os.path.isdir(os.path.join(folder_path, filename)):
